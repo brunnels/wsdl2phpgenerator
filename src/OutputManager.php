@@ -85,9 +85,9 @@ class OutputManager
       }
 
       if (!is_dir($this->config->getOutputDir()))
-	$this->file->save(dirname($this->config->getOutputDir()));
+	      $this->file->save(dirname($this->config->getOutputDir()));
       else
-      $this->file->save($this->dir);
+       $this->file->save($this->dir);
     }
     else
     {

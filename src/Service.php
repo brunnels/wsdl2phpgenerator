@@ -91,18 +91,22 @@ class Service
   public function generateClass()
   {
     $config = Generator::getInstance()->getConfig();
-
-    // Add prefix and suffix
-    $name = $config->getPrefix().$this->identifier.$config->getSuffix();
-
-    // Generate a valid classname
-    try
+    
+    if($config->getServiceClassName())
     {
-      $name = Validator::validateClass($name);
+      $name = $config->getServiceClassName();
     }
-    catch (ValidationException $e)
+    else
     {
-      $name .= 'Custom';
+      // Generate a valid classname
+      try
+      {
+        $name = Validator::validateClass($this->identifier);
+      }
+      catch (ValidationException $e)
+      {
+        $name .= 'Custom';
+      }
     }
 
     // Create the class object

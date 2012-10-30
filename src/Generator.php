@@ -141,8 +141,8 @@ class Generator
     $wsdl = $this->config->getInputFile();
     if (is_array($wsdl))
       foreach($wsdl as $ws)
-	$this->load($ws);
-    else
+	      $this->load($ws);
+	  else
       $this->load($wsdl);
 
     $this->savePhp();
@@ -228,10 +228,10 @@ class Generator
     $this->log($this->display('Loading types'));
 
     $types = $this->client->__getTypes();
-
+    
     foreach($types as $typeStr)
     {
-	  $wsdlNewline = ( strpos( $typeStr, "\r\n" ) ? "\r\n" : "\n" );
+	    $wsdlNewline = ( strpos( $typeStr, "\r\n" ) ? "\r\n" : "\n" );
       $parts = explode($wsdlNewline, $typeStr);
       $tArr = explode(" ", $parts[0]);
       $restriction = $tArr[0];
@@ -336,9 +336,9 @@ class Generator
       {
         $types[] = $class;
 
-        if ($this->config->getOneFile() == false)
+        if ($this->config->getOneFile() == false && $this->config->getSkipAddDependencies() == false)
         {
-          $service->addDependency($class->getIdentifier().'.php');
+          $service->addDependency($class->getIdentifier() . $this->config->getClassFileSuffix() . '.php');
         }
       }
     }

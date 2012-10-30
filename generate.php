@@ -61,6 +61,8 @@ $cli = new Cli('wsdl2php', '[OPTIONS] -i wsdlfile -o directory', '1.5.2');
 $cli->addFlag('-e', _('If all classes should be guarded with if(!class_exists) statements'), true, false);
 $cli->addFlag('-t', _('If no type constructor should be generated'), true, false);
 $cli->addFlag('-s', _('If the output should be a single file'), true, false);
+$cli->addFlag('-d', _('Skips addiing dependency includes'), true, false);
+$cli->addFlag('-g', _('The service class name'), false, false);
 $cli->addFlag('-v', _('If the output to the console should be verbose'), true, false);
 $cli->addFlag('-i', _('The input wsdl file'), false, true);
 $cli->addFlag('-o', _('The output directory or file if -s is used (in that case, .php will be appened to file name)'), false, true);
@@ -68,6 +70,7 @@ $cli->addFlag('-n', _('Use namespace with the name'), false, false);
 $cli->addFlag('-c', _('A comma separated list of classnames to generate. If this is used only classes that exist in the list will be generated. If the service is not in this list and the -s flag is used the filename will be the name of the first class that is generated'), false, false);
 $cli->addFlag('-p', _('The prefix to use for the generated classes'), false, false);
 $cli->addFlag('-q', _('The suffix to use for the generated classes'), false, false);
+$cli->addFlag('-f', _('The filename suffix to use for the generated classes'), false, false);
 $cli->addFlag('--singleElementArrays', _('Adds the option to use single element arrays to the client'), true, false);
 $cli->addFlag('--xsiArrayType', _('Adds the option to use xsi arrays to the client'), true, false);
 $cli->addFlag('--waitOneWayCalls', _('Adds the option to use wait one way calls to the client'), true, false);
@@ -82,6 +85,8 @@ $cli->addFlag('-h', _('Show this help'), true, false);
 $cli->addAlias('-e', '--classExists');
 $cli->addAlias('-e', '--exists');
 $cli->addAlias('-t', '--noTypeConstructor');
+$cli->addAlias('-d', '--skipAddDependencies');
+$cli->addAlias('-g', '--serviceClassName');
 $cli->addAlias('-s', '--singleFile');
 $cli->addAlias('-v', '--verbose');
 $cli->addAlias('-i', '--input');
@@ -92,15 +97,16 @@ $cli->addAlias('-c', '--classNames');
 $cli->addAlias('-c', '--classList');
 $cli->addAlias('-p', '--prefix');
 $cli->addAlias('-q', '--suffix');
+$cli->addAlias('-f', '--filenameSuffix');
 $cli->addAlias('-h', '--help');
 $cli->addAlias('-h', '--h');
 
 $cli->validate($argv);
 
-$singleFile = $cli->getValue('-s');
+$oneFile = $cli->getValue('-s');
 $classNames = trim($cli->getValue('-c'));
 
-if ($singleFile && strlen($classNames) > 0)
+if ($oneFile && strlen($classNames) > 0)
 {
   // Print different messages based on if more than one class is requested for generation
   if (strpos($classNames, ',') !== false)
@@ -133,6 +139,9 @@ if ($singleFile && strlen($classNames) > 0)
 }
 
 $classExists = $cli->getValue('-e');
+$classFileSuffix = $cli->getValue('-f');
+$serviceClassName = $cli->getValue('-g');
+$skipAddDependencies = $cli->getValue('-d');
 $verbose = $cli->getValue('-v');
 $noTypeConstructor = $cli->getValue('-t');
 $inputFile = $cli->getValue('-i');
@@ -178,7 +187,7 @@ if ($cli->getValue('--gzip'))
   $gzip = 'SOAP_COMPRESSION_ACCEPT | SOAP_COMPRESSION_GZIP';
 }
 
-$config = new Config($inputFile, $outputDir, $verbose, $singleFile, $classExists, $noTypeConstructor, $namespaceName, $optionsArray, $wsdlCache, $gzip, $classNames, $prefix, $suffix);
+$config = new Config($inputFile, $outputDir, $verbose, $oneFile, $skipAddDependencies, $classExists, $classFileSuffix, $serviceClassName, $noTypeConstructor, $namespaceName, $optionsArray, $wsdlCache, $gzip, $classNames, $prefix, $suffix);
 
 $generator = Generator::instance();
 $generator->generate($config);

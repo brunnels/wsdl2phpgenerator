@@ -25,6 +25,13 @@ class Config
    * @access private
    */
   private $oneFile;
+  
+  /**
+   *
+   * @var bool Skips adding dependency includes if true
+   * @access private
+   */
+  private $skipAddDependencies;
 
   /**
    *
@@ -59,6 +66,19 @@ class Config
    * @var string The wsdl cache to use if any. Possible values WSDL_CACHE_NONE, WSDL_CACHE_DISK, WSDL_CACHE_MEMORY or WSDL_CACHE_BOTH
    */
   private $wsdlCache;
+  
+  /**
+   * 
+   * @var string The suffix for the class file name.  ie "class" outputs ClassName.class.php
+   */
+  private $classFileSuffix;
+  
+  /**
+   * The name of the service class
+   * 
+   * @var string
+   */
+  private $serviceClassName;
 
   /**
    *
@@ -111,7 +131,10 @@ class Config
    * @param string $outputDir
    * @param bool $verbose
    * @param bool $oneFile
+   * @param bool $skipAddDependencies
    * @param bool $classExists
+   * @param string $classFileSuffix
+   * @param string $serviceClassName
    * @param bool $noTypeConstructor
    * @param string $namespaceName
    * @param array $optionsFeatures
@@ -122,12 +145,15 @@ class Config
    * @param string $suffix
    * @param string $sharedTypes
    */
-  public function __construct($inputFile, $outputDir, $verbose = false, $oneFile = false, $classExists = false, $noTypeConstructor = false, $namespaceName = '', $optionsFeatures = array(), $wsdlCache = '', $compression = '', $classNames = '', $prefix = '', $suffix = '', $sharedTypes = false)
+  public function __construct($inputFile, $outputDir, $verbose = false, $oneFile = false, $skipAddDependencies = false, $classExists = false, $classFileSuffix = '', $serviceClassName = null, $noTypeConstructor = false, $namespaceName = '', $optionsFeatures = array(), $wsdlCache = '', $compression = '', $classNames = '', $prefix = '', $suffix = '', $sharedTypes = false)
   {
     $this->namespaceName = trim($namespaceName);
     $this->oneFile = $oneFile;
+    $this->skipAddDependencies = $skipAddDependencies;
     $this->verbose = $verbose;
     $this->classExists = $classExists;
+    $this->classFileSuffix = $classFileSuffix;
+    $this->serviceClassName = $serviceClassName;
     $this->noTypeConstructor = $noTypeConstructor;
     $this->outputDir = trim($outputDir);
     if (is_array($inputFile))
@@ -166,6 +192,15 @@ class Config
   {
     return $this->oneFile;
   }
+  
+  /**
+   * @return bool Returns if the dependency includes should be added
+   * @access public
+   */
+  public function getSkipAddDependencies()
+  {
+    return $this->skipAddDependencies;
+  }
 
   /**
    * @return bool Returns if the output should be protected with class_exists statements
@@ -174,6 +209,24 @@ class Config
   public function getClassExists()
   {
     return $this->classExists;
+  }
+  
+  /**
+   * @return string Returns the configured class file suffix
+   * @access public
+   */
+  public function getClassFileSuffix()
+  {
+    return $this->classFileSuffix;
+  }
+  
+  /**
+   * @return string Returns the configured service class name
+   * @access public
+   */
+  public function getServiceClassName()
+  {
+    return $this->serviceClassName;
   }
 
   /**

@@ -59,11 +59,6 @@ abstract class Type
     $this->datatype = $datatype;
     $this->identifier = $name;
 
-    $config = Generator::getInstance()->getConfig();
-
-    // Add prefix and suffix
-    $name = $config->getPrefix().$this->identifier.$config->getSuffix();
-
     try
     {
       $name = Validator::validateClass($name);

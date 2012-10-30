@@ -99,7 +99,8 @@ class PhpFile
    */
   public function save($directory)
   {
-    file_put_contents($directory.DIRECTORY_SEPARATOR.$this->name.'.php', $this->getSource());
+    $config = Generator::getInstance()->getConfig();
+    file_put_contents($directory.DIRECTORY_SEPARATOR.$this->name . $config->getClassFileSuffix() . '.php', $this->getSource());
   }
 
   /**
