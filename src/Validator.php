@@ -138,7 +138,7 @@ class Validator
     }
 
     return preg_replace('/[^a-zA-Z0-9_x7f-xff]*/', '', preg_replace('/^[^a-zA-Z_x7f-xff]*/', '', $name));
-    
+
 
   }
 
@@ -196,7 +196,7 @@ class Validator
     if (substr($type, -2) == "[]" || strtolower(substr($type, 0, 7)) == "arrayof")
     {
       return 'array';
-    }    
+    }
 
     switch (strtolower($type))
     {
@@ -214,9 +214,13 @@ class Validator
       case "string": case "token": case "normalizedstring": case "hexbinary":
         return 'string';
         break;
-        
+
+      case "boolean":
+        return 'bool';
+        break;
+
       case "anytype":
-        return 'SoapVar';
+        return 'Array';
         break;
 
       default:
@@ -242,15 +246,15 @@ class Validator
   {
     return in_array(strtolower($str), self::$keywords);
   }
-  
+
   /**
    * Applies config prefix and suffix to a string
-   * 
+   *
    * @param string $str
    */
   private static function applyPrefixAndSuffix($str)
   {
-    $config = Generator::getInstance()->getConfig();    
+    $config = Generator::getInstance()->getConfig();
     return $config->getPrefix() . (($config->getPrefix()) ? ucfirst($str) : $str) . $config->getSuffix();
   }
 }
