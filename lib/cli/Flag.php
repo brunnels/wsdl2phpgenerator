@@ -56,15 +56,16 @@ class Flag
     $this->aliases = array();
     $this->maxNumAliases = 4;
   }
-
-  /**
-   *
-   * @return string Returns the string representation of the flag
-   */
-  public function  __toString()
+     
+  public function getDescription()
   {
-    return implode(', ', array_merge(array($this->name), $this->aliases)).str_pad('', $this->maxNumAliases - count($this->aliases), "t").$this->description.PHP_EOL;
+    return $this->description;
   }
+  
+  public function getAliasStr()
+  {
+    return implode(', ', $this->getAliases());
+  } 
 
   /**
    *

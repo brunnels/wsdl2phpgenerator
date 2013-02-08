@@ -38,7 +38,7 @@ class Cli extends CliParser
 
   /**
    *
-   * @var array An array of accepted Flags, all the flags that have a meaning
+   * @var array[Flag] An array of accepted Flags, all the flags that have a meaning
    */
   private $acceptedFlags;
 
@@ -47,6 +47,8 @@ class Cli extends CliParser
    * @var array An array of the requred Flag objects
    */
   private $requiredFlags;
+  
+  private $size;
 
   /**
    *
@@ -54,7 +56,7 @@ class Cli extends CliParser
    * @param string $usage
    * @param string $version
    */
-  public function  __construct($programName, $usage, $version)
+  public function  __construct($programName, $usage, $version, $maxLineSize = null)
   {
     parent::__construct();
 
@@ -63,6 +65,21 @@ class Cli extends CliParser
     $this->version = $version;
     $this->acceptedFlags = array();
     $this->requiredFlags = array();
+    
+    if (null === $maxLineSize)
+    {
+      if (function_exists('shell_exec'))
+      {
+        // this is tricky because "tput cols 2>&1" is not accurate
+        $maxLineSize = ctype_digit(trim(shell_exec('tput cols 2>&1'))) ? (integer) shell_exec('tput cols') : 78;
+      }
+      else
+      {
+        $maxLineSize = 78;
+      }
+    }
+    
+    $this->size = $maxLineSize;
   }
 
   /**
@@ -144,19 +161,67 @@ class Cli extends CliParser
    */
   public function showUsage()
   {
+    print PHP_EOL;
     print _('Usage: ').$this->programName.' '.$this->usageString.PHP_EOL;
 
-    foreach ($this->acceptedFlags as $flag)
-    {
-      print $flag;
-    }
+    $this->printFlagsUsageText();
+    
+    print PHP_EOL;
 
     print _('Version: ').$this->version.PHP_EOL;
 
     print PHP_EOL;
     exit;
   }
-
+  
+  /**
+   * 
+   * @return array[Flag]
+   */
+  private function getAcceptedFlags()
+  {
+    return $this->acceptedFlags;
+  }
+  
+  private function printFlagsUsageText()
+  {    
+    $max = 0;
+    
+    // find the largest name string
+    foreach ($this->getAcceptedFlags() as $flag)
+    {    
+      $max = (strlen($flag->getName()) + 2 > $max) ? strlen($flag->getName()) + 2 : $max;
+    }
+    
+    foreach($this->getAcceptedFlags() as $flag)
+    {
+      
+      $flagStr = sprintf(
+        ' %-'.$max.'s %s%s',
+        $flag->getName(),
+        $flag->getAliasStr() ? sprintf('( %s ) ', $flag->getAliasStr()) : '',
+        $flag->getDescription()
+      );
+            
+      if(strlen($flagStr) > $this->size)
+      {
+        while((strlen($flagStr) + $max) > $this->size)
+        { 
+          $lines = explode("\n", wordwrap($flagStr, $this->size, "\n"));
+          print array_shift($lines);
+          $flagStr = sprintf('%-' . ($max + 2) .'s','') . implode(' ', $lines);
+        }
+        
+        print PHP_EOL.$flagStr;
+      }
+      else
+      {
+        print $flagStr;
+      }
+      print PHP_EOL;
+    }
+  }
+   
   /**
    * Parses and validates the flags according to the rules set up
    * Shows usage and terminates if the validation fails
