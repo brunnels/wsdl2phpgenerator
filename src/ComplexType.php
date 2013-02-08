@@ -42,10 +42,10 @@ class ComplexType extends Type
   }
 
   /**
-   * Implements the loading of the class object
+   * Implements the loading of the class object using simple properties
    * @throws Exception if the class is already generated(not null)
    */
-  protected function generateClass()
+  protected function generateSimpleClass()
   {
     if ($this->class != null)
     {
@@ -95,6 +95,88 @@ class ComplexType extends Type
     if ($config->getNoTypeConstructor() == false)
     {
       $class->addFunction($function);
+    }
+
+    $this->class = $class;
+  }
+
+  /**
+   * Implements the loading of the class object using setters and getters
+   * @throws Exception if the class is already generated(not null)
+   */
+  protected function generateClass()
+  {
+    if ($this->class != null)
+    {
+      throw new Exception("The class has already been generated");
+    }
+
+    $primitives = array(
+      'int',
+      'float',
+      'string',
+      'bool',
+      'mixed'
+    );
+
+    $config = Generator::getInstance()->getConfig();
+
+    $class = new PhpClass($this->phpIdentifier, $config->getClassExists());
+
+    // Only add the constructor if type constructor is selected
+    if ($config->getNoTypeConstructor() == false)
+    {
+      $constructorComment = new PhpDocComment();
+      $constructorComment->setAccess(PhpDocElementFactory::getPublicAccess());
+
+      $constructorSource  = '  foreach($properties as $key => $value)'.PHP_EOL;
+      $constructorSource .= '  {'.PHP_EOL;
+      $constructorSource .= '    $setter = \'set\' . ucfirst($key);'.PHP_EOL;
+      $constructorSource .= '    $this->$setter($value);'.PHP_EOL;
+      $constructorSource .= '  }'.PHP_EOL;
+
+      $constructorParameters = 'Array $properties = array()';
+      $constructorFunction = new PhpFunction('public', '__construct', $constructorParameters, $constructorSource, $constructorComment);
+      $class->addFunction($constructorFunction);
+    }
+
+    // Add member variables
+    foreach ($this->members as $member)
+    {
+      $type = '';
+
+      try
+      {
+        $type = Validator::validateType($member->getType());
+      }
+      catch (ValidationException $e)
+      {
+        $type .= 'Custom';
+      }
+
+      $name = Validator::validateNamingConvention($member->getName());
+
+      $classComment = new PhpDocComment();
+      $classComment->setVar(PhpDocElementFactory::getVar($type, $name, ''));
+      $classComment->setAccess(PhpDocElementFactory::getPrivateAccess());
+      $classVar = new PhpVariable('private', $name, '', $classComment);
+      $class->addVariable($classVar);
+
+      $setterParameters = ((!in_array($type, $primitives)) ? "$type " : '') . "$$name";
+      $setterSource = "  \$this->$name = $$name;".PHP_EOL;
+      $setterComment = new PhpDocComment();
+      $setterComment->setAccess(PhpDocElementFactory::getPublicAccess());
+      $setterComment->addParam(PhpDocElementFactory::getParam($type, $name, ''));
+      $setterFunction = new PhpFunction('public', 'set' . ucfirst($name), $setterParameters, $setterSource, $setterComment);
+      $class->addFunction($setterFunction);
+
+      $getterSource = "  return \$this->$name;".PHP_EOL;
+      $getterComment = new PhpDocComment();
+      $getterComment->setAccess(PhpDocElementFactory::getPublicAccess());
+      $getterComment->setReturn(PhpDocElementFactory::getReturn($type, ''));
+      $getterFunction = new PhpFunction('public', 'get' . ucfirst($name), '', $getterSource, $getterComment);
+      $class->addFunction($getterFunction);
+
     }
 
     $this->class = $class;
