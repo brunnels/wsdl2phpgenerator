@@ -24,7 +24,7 @@ require_once dirname(__FILE__).'/../lib/phpSource/PhpFile.php';
  *
  * @package Wsdl2PhpGenerator
  * @author Fredrik Wallgren <fredrik.wallgren@gmail.com>
- *Â @licenseÂ http://www.opensource.org/licenses/mit-license.php MITÂ License
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 class Generator
 {
@@ -99,8 +99,10 @@ class Generator
   /**
    * Initializes the single instance if it hasn't been, and returns it if it has.
    */
-  public static function instance() {
-  	if( self::$instance === null ) {
+  public static function instance() 
+  {
+  	if( self::$instance === null ) 
+  	{
   		self::$instance = new Generator();
   	}
   	return self::$instance;
@@ -111,7 +113,8 @@ class Generator
    *
    * @param callable $callback
    */
-  public function setDisplayCallback( $callback ) {
+  public function setDisplayCallback( $callback ) 
+  {
   	$this->displayCallback = $callback;
   }
 
@@ -120,7 +123,8 @@ class Generator
    *
    * @param string $string
    */
-  private function display( $string ) {
+  private function display( $string ) 
+  {
   	$disp = $this->displayCallback;
   	return $disp( $string );
   }
@@ -140,10 +144,16 @@ class Generator
 
     $wsdl = $this->config->getInputFile();
     if (is_array($wsdl))
+    {
       foreach($wsdl as $ws)
+      {
 	      $this->load($ws);
+      }
+    }
 	  else
+	  {
       $this->load($wsdl);
+	  }
 
     $this->savePhp();
 
@@ -293,16 +303,17 @@ class Generator
 
       if ($type != null)
       {
-	$already_registered = FALSE;
-	if ($this->config->getSharedTypes())
-	  foreach ($this->types as $registered_types) {
-	    if ($registered_types->getIdentifier() == $type->getIdentifier()) {
-	      $already_registered = TRUE;
-	      break;
-	    }
-	  }
-	if (!$already_registered)
-        $this->types[] = $type;
+      	$already_registered = FALSE;
+      	if ($this->config->getSharedTypes())
+      	  foreach ($this->types as $registered_types) 
+      	  {
+      	    if ($registered_types->getIdentifier() == $type->getIdentifier()) 
+      	    {
+      	      $already_registered = TRUE;
+      	      break;
+      	    }
+      	  }
+      	if (!$already_registered) $this->types[] = $type;
       }
     }
 
@@ -438,4 +449,3 @@ class Generator
     return $typenode;
   }
 }
-
