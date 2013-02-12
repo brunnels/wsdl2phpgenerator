@@ -30,6 +30,12 @@ class ComplexType extends Type
   private $members;
 
   /**
+   *
+   * @var array The primitive types
+   */
+  private $primitive;
+
+  /**
    * Construct the object
    *
    * @param string $name The identifier for the class
@@ -39,29 +45,23 @@ class ComplexType extends Type
   {
     parent::__construct($name, null);
     $this->members = array();
+    $this->primitives = array(
+      'int',
+      'float',
+      'string',
+      'bool',
+      'mixed'
+    );
   }
 
-  /**
-   * Implements the loading of the class object using simple properties
-   * @throws Exception if the class is already generated(not null)
-   */
-  protected function generateSimpleClass()
+  private function generateParameterConstructor($class)
   {
-    if ($this->class != null)
-    {
-      throw new Exception("The class has already been generated");
-    }
-
-    $config = Generator::getInstance()->getConfig();
-
-    $class = new PhpClass($this->phpIdentifier, $config->getClassExists());
-
     $constructorComment = new PhpDocComment();
     $constructorComment->setAccess(PhpDocElementFactory::getPublicAccess());
+
     $constructorSource = '';
     $constructorParameters = '';
 
-    // Add member variables
     foreach ($this->members as $member)
     {
       $type = '';
@@ -76,28 +76,37 @@ class ComplexType extends Type
       }
 
       $name = Validator::validateNamingConvention($member->getName());
-      $comment = new PhpDocComment();
-      $comment->setVar(PhpDocElementFactory::getVar($type, $name, ''));
-      $comment->setAccess(PhpDocElementFactory::getPublicAccess());
-      $var = new PhpVariable('public', $name, '', $comment);
-      $class->addVariable($var);
 
-      $constructorSource .= '  $this->'.$name.' = $'.$name.';'.PHP_EOL;
+      $constructorSource .= '  $this->set' . ucfirst($name) . "($$name);" . PHP_EOL;
       $constructorComment->addParam(PhpDocElementFactory::getParam($type, $name, ''));
       $constructorComment->setAccess(PhpDocElementFactory::getPublicAccess());
-      $constructorParameters .= ', $'.$name;
+      $constructorParameters .= ((!in_array($type, $this->primitives)) ? ", $type " : ', ') . "$$name";
     }
 
     $constructorParameters = substr($constructorParameters, 2); // Remove first comma
-    $function = new PhpFunction('public', '__construct', $constructorParameters, $constructorSource, $constructorComment);
 
-    // Only add the constructor if type constructor is selected
-    if ($config->getNoTypeConstructor() == false)
-    {
-      $class->addFunction($function);
-    }
+    $constructorFunction = new PhpFunction('public', '__construct', $constructorParameters, $constructorSource, $constructorComment);
+    $class->addFunction($constructorFunction);
+    return $class;
+  }
 
-    $this->class = $class;
+  private function generateArrayConstructor($class)
+  {
+    $constructorComment = new PhpDocComment();
+    $constructorComment->setAccess(PhpDocElementFactory::getPublicAccess());
+
+    $constructorSource  = '  foreach($properties as $key => $value)'.PHP_EOL;
+    $constructorSource .= '  {'.PHP_EOL;
+    $constructorSource .= '    $setter = \'set\' . ucfirst($key);'.PHP_EOL;
+    $constructorSource .= '    $this->$setter($value);'.PHP_EOL;
+    $constructorSource .= '  }'.PHP_EOL;
+
+    $constructorParameters = 'Array $properties = array()';
+
+    $constructorFunction = new PhpFunction('public', '__construct', $constructorParameters, $constructorSource, $constructorComment);
+    $class->addFunction($constructorFunction);
+
+    return $class;
   }
 
   /**
@@ -111,33 +120,16 @@ class ComplexType extends Type
       throw new Exception("The class has already been generated");
     }
 
-    $primitives = array(
-      'int',
-      'float',
-      'string',
-      'bool',
-      'mixed'
-    );
-
     $config = Generator::getInstance()->getConfig();
 
     $class = new PhpClass($this->phpIdentifier, $config->getClassExists());
 
+
+
     // Only add the constructor if type constructor is selected
     if ($config->getNoTypeConstructor() == false)
     {
-      $constructorComment = new PhpDocComment();
-      $constructorComment->setAccess(PhpDocElementFactory::getPublicAccess());
-
-      $constructorSource  = '  foreach($properties as $key => $value)'.PHP_EOL;
-      $constructorSource .= '  {'.PHP_EOL;
-      $constructorSource .= '    $setter = \'set\' . ucfirst($key);'.PHP_EOL;
-      $constructorSource .= '    $this->$setter($value);'.PHP_EOL;
-      $constructorSource .= '  }'.PHP_EOL;
-
-      $constructorParameters = 'Array $properties = array()';
-      $constructorFunction = new PhpFunction('public', '__construct', $constructorParameters, $constructorSource, $constructorComment);
-      $class->addFunction($constructorFunction);
+      $class = (count($this->members) > 5) ? $this->generateArrayConstructor($class) : $this->generateParameterConstructor($class);
     }
 
     // Add member variables
@@ -162,7 +154,7 @@ class ComplexType extends Type
       $classVar = new PhpVariable('private', $name, '', $classComment);
       $class->addVariable($classVar);
 
-      $setterParameters = ((!in_array($type, $primitives)) ? "$type " : '') . "$$name";
+      $setterParameters = ((!in_array($type, $this->primitives)) ? "$type " : '') . "$$name";
       $setterSource = "  \$this->$name = $$name;".PHP_EOL;
       $setterComment = new PhpDocComment();
       $setterComment->setAccess(PhpDocElementFactory::getPublicAccess());
@@ -176,7 +168,6 @@ class ComplexType extends Type
       $getterComment->setReturn(PhpDocElementFactory::getReturn($type, ''));
       $getterFunction = new PhpFunction('public', 'get' . ucfirst($name), '', $getterSource, $getterComment);
       $class->addFunction($getterFunction);
-
     }
 
     $this->class = $class;
