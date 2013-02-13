@@ -222,6 +222,14 @@ class Validator
       case "anytype":
         return 'Array';
         break;
+        
+      case "enum":
+        return 'Enum';
+        break;
+          
+      case "datetime":
+        return 'DateTime';
+        break;
 
       default:
         $validType = self::applyPrefixAndSuffix(self::validateNamingConvention($type));
