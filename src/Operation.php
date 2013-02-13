@@ -88,9 +88,9 @@ class Operation
         {
           if ($type instanceof ComplexType)
           {
-            if ($typeHint == $type->getPhpIdentifier())
+            if ($typeHint == $type->getIdentifier())
             {
-              $ret .= $typeHint.' ';
+              $ret .= $type->getPhpIdentifier().' ';
             }
           }
         }
@@ -184,7 +184,7 @@ class Operation
 
     foreach (explode(', ', $paramStr) as $param)
     {
-      $arr = explode(' ', $param);
+      $arr = explode(' ', $param);      
 
       // Check if we have type hint. 1 = no type hint
       if (count($arr) == 1)
@@ -197,8 +197,8 @@ class Operation
       else
       {
         $this->params[$arr[1]] = $arr[0];
-      }
-    }
+      }      
+    }    
   }
 }
 
