@@ -91,7 +91,7 @@ class Service
   public function generateClass()
   {
     $config = Generator::getInstance()->getConfig();
-    
+
     if($config->getServiceClassName())
     {
       $name = $config->getServiceClassName();
@@ -117,7 +117,6 @@ class Service
     $comment = new PhpDocComment();
     $comment->addParam(PhpDocElementFactory::getParam('array', 'config', 'A array of config values'));
     $comment->addParam(PhpDocElementFactory::getParam('string', 'wsdl', 'The wsdl file to use'));
-    $comment->setAccess(PhpDocElementFactory::getPublicAccess());
 
     $source = '  foreach(self::$classmap as $key => $value)
   {
@@ -137,7 +136,6 @@ class Service
     // Generate the classmap
     $name = 'classmap';
     $comment = new PhpDocComment();
-    $comment->setAccess(PhpDocElementFactory::getPrivateAccess());
     $comment->setVar(PhpDocElementFactory::getVar('array', $name, 'The defined classes'));
 
     $init = 'array('.PHP_EOL;
@@ -161,15 +159,15 @@ class Service
       $name = Validator::validateNamingConvention($operation->getName());
 
       $comment = new PhpDocComment($operation->getDescription());
-      $comment->setAccess(PhpDocElementFactory::getPublicAccess());
 
       foreach ($operation->getParams() as $param => $hint)
       {
         $arr = $operation->getPhpDocParams($param, $this->types);
-        $comment->addParam(PhpDocElementFactory::getParam($arr['type'], $arr['name'], $arr['desc']));
+        $comment->addParam(PhpDocElementFactory::getParam($arr['type'], '$' . $arr['type'], $arr['desc']));
+        $comment->setReturn(PhpDocElementFactory::getReturn($arr['type'] . 'Response', ''));
       }
 
-      $source = '  return $this->__soapCall(\''.$name.'\', array('.$operation->getParamStringNoTypeHints().'));'.PHP_EOL;
+      $source = '  return $this->__soapCall(\''.$name.'\', array($' . $arr['type'] . '));' . PHP_EOL;
 
       $paramStr = $operation->getParamString($this->types);
 

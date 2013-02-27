@@ -220,13 +220,14 @@ class Validator
         break;
 
       case "anytype":
-        return 'Array';
+      case "array":
+        return 'array';
         break;
-        
+
       case "enum":
         return 'Enum';
         break;
-          
+
       case "datetime":
         return 'DateTime';
         break;
