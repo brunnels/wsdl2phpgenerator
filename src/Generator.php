@@ -9,9 +9,9 @@
 require_once dirname(__FILE__).'/Config.php';
 require_once dirname(__FILE__).'/Validator.php';
 require_once dirname(__FILE__).'/Variable.php';
-require_once dirname(__FILE__).'/Enum.php';
+require_once dirname(__FILE__).'/EnumType.php';
 require_once dirname(__FILE__).'/ComplexType.php';
-require_once dirname(__FILE__).'/Pattern.php';
+require_once dirname(__FILE__).'/PatternType.php';
 require_once dirname(__FILE__).'/DocumentationManager.php';
 require_once dirname(__FILE__).'/Service.php';
 require_once dirname(__FILE__).'/OutputManager.php';
@@ -24,7 +24,7 @@ require_once dirname(__FILE__).'/../lib/phpSource/PhpFile.php';
  *
  * @package Wsdl2PhpGenerator
  * @author Fredrik Wallgren <fredrik.wallgren@gmail.com>
- * @license http://www.opensource.org/licenses/mit-license.php MIT License
+ *ï¿½@licenseï¿½http://www.opensource.org/licenses/mit-license.php MITï¿½License
  */
 class Generator
 {
@@ -81,7 +81,7 @@ class Generator
    * @var displayCallback The function called to display output internally. Initially set to gettext if set
    */
   private $displayCallback;
-  
+
   /**
    * Construct the generator
    */
@@ -99,21 +99,21 @@ class Generator
   /**
    * Initializes the single instance if it hasn't been, and returns it if it has.
    */
-  public static function instance() 
+  public static function instance()
   {
-  	if( self::$instance === null ) 
+  	if( self::$instance === null )
   	{
   		self::$instance = new Generator();
   	}
   	return self::$instance;
   }
-  
+
   /**
    * Sets the display callback to an anonymous function, or a string referring to a built-in callable
    *
    * @param callable $callback
    */
-  public function setDisplayCallback( $callback ) 
+  public function setDisplayCallback( $callback )
   {
   	$this->displayCallback = $callback;
   }
@@ -123,12 +123,12 @@ class Generator
    *
    * @param string $string
    */
-  private function display( $string ) 
+  private function display( $string )
   {
   	$disp = $this->displayCallback;
   	return $disp( $string );
   }
-  
+
   /**
    * Generates php source code from a wsdl file
    *
@@ -238,7 +238,7 @@ class Generator
     $this->log($this->display('Loading types'));
 
     $types = $this->client->__getTypes();
-    
+
     foreach($types as $typeStr)
     {
 	    $wsdlNewline = ( strpos( $typeStr, "\r\n" ) ? "\r\n" : "\n" );
@@ -270,7 +270,7 @@ class Generator
           $type->addMember($typename, $name);
         }
       }
-      else // Enum or Pattern
+      else // EnumType or PatternType
       {
         $typenode = $this->findTypenode($className);
 
@@ -281,7 +281,7 @@ class Generator
           $patternList = $typenode->getElementsByTagName('pattern');
           if ($enumerationList->length > 0)
           {
-            $type = new Enum($className, $restriction);
+            $type = new EnumType($className, $restriction);
             $this->log($this->display('Loading enum ').$type->getPhpIdentifier());
             foreach ($enumerationList as $enum)
             {
@@ -290,7 +290,7 @@ class Generator
           }
           else if ($patternList->length > 0)// If pattern
           {
-            $type = new Pattern($className, $restriction);
+            $type = new PatternType($className, $restriction);
             $this->log($this->display('Loading pattern ').$type->getPhpIdentifier());
             $type->setValue($patternList->item(0)->attributes->getNamedItem('value')->nodeValue);
           }
@@ -305,9 +305,9 @@ class Generator
       {
       	$already_registered = FALSE;
       	if ($this->config->getSharedTypes())
-      	  foreach ($this->types as $registered_types) 
+      	  foreach ($this->types as $registered_types)
       	  {
-      	    if ($registered_types->getIdentifier() == $type->getIdentifier()) 
+      	    if ($registered_types->getIdentifier() == $type->getIdentifier())
       	    {
       	      $already_registered = TRUE;
       	      break;
@@ -342,14 +342,17 @@ class Generator
     $types = array();
     foreach ($this->types as $type)
     {
-      $class = $type->getClass();
-      if ($class != null)
+      if($type instanceof ComplexType && $type->getMemberCount())
       {
-        $types[] = $class;
-
-        if ($this->config->getOneFile() == false && $this->config->getSkipAddDependencies() == false)
+        $class = $type->getClass();
+        if ($class != null)
         {
-          $service->addDependency($class->getIdentifier() . $this->config->getClassFileSuffix() . '.php');
+          $types[] = $class;
+
+          if ($this->config->getOneFile() == false && $this->config->getSkipAddDependencies() == false)
+          {
+            $service->addDependency($class->getIdentifier() . $this->config->getClassFileSuffix() . '.php');
+          }
         }
       }
     }

@@ -27,32 +27,19 @@ class ComplexType extends Type
    *
    * @var array The members in the type
    */
-  private $members;
+  private $members = array();
 
   /**
    *
    * @var array The primitive types
    */
-  private $primitive;
-
-  /**
-   * Construct the object
-   *
-   * @param string $name The identifier for the class
-   * @param string $restriction The restriction(datatype) of the values
-   */
-  function __construct($name)
-  {
-    parent::__construct($name, null);
-    $this->members = array();
-    $this->primitives = array(
-      'int',
-      'float',
-      'string',
-      'bool',
-      'mixed'
-    );
-  }
+  private $primitives = array(
+    'int',
+    'float',
+    'string',
+    'bool',
+    'mixed'
+  );
 
   private function generateParameterConstructor($class)
   {
@@ -75,10 +62,10 @@ class ComplexType extends Type
         $type .= 'Custom';
       }
 
-      $name = Validator::validateNamingConvention($member->getName());
-      $constructorSource .= "  call_user_func(array(\$this, 'set' . ucfirst(sfInflector::camelize('$name'))), $$name);".PHP_EOL;
+      $name = str_replace('__', '', Validator::validateNamingConvention($member->getName()));
+      $constructorSource .= "  call_user_func(array(\$this, 'set" . ucfirst($this->camelize($name)) . "'), $$name);".PHP_EOL;
       $constructorComment->addParam(PhpDocElementFactory::getParam($type, $name, ''));
-      $constructorParameters .= ((!in_array($type, $this->primitives)) ? ", $type " : ', ') . "$$name";
+      $constructorParameters .= ((!in_array($type, $this->primitives)) ? ", $type " : ', ') . "$$name = NULL";
       $i++;
     }
 
@@ -89,22 +76,61 @@ class ComplexType extends Type
     return $class;
   }
 
-  private function generateArrayConstructor($class)
+  private function generateArrayParameterConstructor($class)
   {
     $constructorComment = new PhpDocComment();
 
-    $constructorSource  = '  foreach($properties as $key => $value)'.PHP_EOL;
-    $constructorSource .= '  {'.PHP_EOL;
-    $constructorSource .= '    call_user_func(array($this, \'set\' . ucfirst(sfInflector::camelize($key)), $value));'.PHP_EOL;
-    $constructorSource .= '  }'.PHP_EOL;
+    $constructorSource  = '';
+    $constructorParameters = '';
+    $propertiesComment = "Properties array\n *\n * Form the \$properties array like this:\n * <code>\n * \$properties = arrray(\n";
 
-    $constructorParameters = 'array $properties = array()';
+    foreach ($this->members as $member)
+    {
+      $type = '';
+
+      try
+      {
+        $type = Validator::validateType($member->getType());
+      }
+      catch (ValidationException $e)
+      {
+        $type .= 'Custom';
+      }
+
+      $name = str_replace('__', '', Validator::validateNamingConvention($member->getName()));
+
+      $propertiesComment .= " *  '$name' => 'value'  // $type\n";
+
+      $constructorSource .= "  call_user_func(array(\$this, 'set" . ucfirst($this->camelize($name)) . "'), \$properties['$name']);".PHP_EOL;
+    }
+
+    $propertiesComment .= " * );\n *\n * </code>\n *";
+
+    $constructorComment->addParam(PhpDocElementFactory::getParam('array[mixed]', 'properties', str_replace("\n", PHP_EOL, $propertiesComment)));
+
+    $constructorParameters = substr($constructorParameters, 2); // Remove first comma
 
     $constructorFunction = new PhpFunction('public', '__construct', $constructorParameters, $constructorSource, $constructorComment);
     $class->addFunction($constructorFunction);
-
     return $class;
   }
+
+//   private function generateArrayConstructor($class)
+//   {
+//     $constructorComment = new PhpDocComment();
+
+//     $constructorSource  = '  foreach($properties as $key => $value)'.PHP_EOL;
+//     $constructorSource .= '  {'.PHP_EOL;
+//     $constructorSource .= '    call_user_func(array($this, \'set\' . str_replace("__", "_", ucfirst(sfInflector::camelize($key)))), $value);'.PHP_EOL;
+//     $constructorSource .= '  }'.PHP_EOL;
+
+//     $constructorParameters = 'array $properties = array()';
+
+//     $constructorFunction = new PhpFunction('public', '__construct', $constructorParameters, $constructorSource, $constructorComment);
+//     $class->addFunction($constructorFunction);
+
+//     return $class;
+//   }
 
   /**
    * Implements the loading of the class object using setters and getters
@@ -126,7 +152,7 @@ class ComplexType extends Type
     // Only add the constructor if type constructor is selected and not a response class
     if ($config->getNoTypeConstructor() == false && $isResponseClass == false)
     {
-      $class = (count($this->members) > 5) ? $this->generateArrayConstructor($class) : $this->generateParameterConstructor($class);
+      $class = (count($this->members) > 5) ? $this->generateArrayParameterConstructor($class) : $this->generateParameterConstructor($class);
     }
 
     // Add member variables
@@ -143,7 +169,8 @@ class ComplexType extends Type
         $type .= 'Custom';
       }
 
-      $name = Validator::validateNamingConvention($member->getName());
+      $varName = Validator::validateNamingConvention($member->getName());
+      $name = str_replace('__', '', $varName);
 
       // if a variable is all uppercase make only the first character upper for the method name
       $methodName = (strtoupper($name) == $name) ? ucfirst(strtolower($name)) : $name;
@@ -152,8 +179,8 @@ class ComplexType extends Type
       $methodName = (strpos($methodName, '_') !== false) ? $this->camelize($methodName) : $methodName;
 
       $classComment = new PhpDocComment();
-      $classComment->setVar(PhpDocElementFactory::getVar($type, $name, ''));
-      $classVar = new PhpVariable('private', $name, '', $classComment);
+      $classComment->setVar(PhpDocElementFactory::getVar($type, $varName, ''));
+      $classVar = new PhpVariable('private', $varName, '', $classComment);
       $class->addVariable($classVar);
 
       // dont add setters for response and result classes
@@ -161,7 +188,7 @@ class ComplexType extends Type
       if (!$isResponseClass)
       {
         $setterParameters = ((!in_array($type, $this->primitives)) ? "$type " : '') . "$$name";
-        $setterSource = "  \$this->$name = $$name;".PHP_EOL;
+        $setterSource = "  \$this->$varName = $$name;".PHP_EOL;
         $setterComment = new PhpDocComment();
         $setterComment->addParam(PhpDocElementFactory::getParam($type, $name, ''));
         $setterFunction = new PhpFunction('public', 'set' . ucfirst($methodName), $setterParameters, $setterSource, $setterComment);
@@ -187,6 +214,15 @@ class ComplexType extends Type
   public function addMember($type, $name)
   {
     $this->members[$name] = new Variable($type, $name);
+  }
+
+  /**
+   *
+   * @return int
+   */
+  public function getMemberCount()
+  {
+    return count($this->members);
   }
 
   private function camelize($lower_case_and_underscored_word)

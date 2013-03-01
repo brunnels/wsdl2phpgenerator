@@ -10,13 +10,13 @@
 require_once dirname(__FILE__).'/Type.php';
 
 /**
- * Enum represents a simple type with enumerated values
+ * EnumType represents a simple type with enumerated values
  *
  * @package Wsdl2PhpGenerator
  * @author Fredrik Wallgren <fredrik.wallgren@gmail.com>
  * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
-class Enum extends Type
+class EnumType extends Type
 {
   /**
    *

@@ -42,7 +42,7 @@ class Service
 
   /**
    *
-   * @var array An array containing the operations of the service
+   * @var array[Operation] An array containing the operations of the service
    */
   private $operations;
 
@@ -143,7 +143,10 @@ class Service
     {
       if($type instanceof ComplexType)
       {
-        $init .= "  '".$type->getIdentifier()."' => '".$type->getPhpIdentifier()."',".PHP_EOL;
+        if($type->getMemberCount())
+        {
+          $init .= "  '".$type->getIdentifier()."' => '".$type->getPhpIdentifier()."',".PHP_EOL;
+        }
       }
     }
     $init = substr($init, 0, strrpos($init, ','));
@@ -163,13 +166,23 @@ class Service
       foreach ($operation->getParams() as $param => $hint)
       {
         $arr = $operation->getPhpDocParams($param, $this->types);
-        $comment->addParam(PhpDocElementFactory::getParam($arr['type'], '$' . $arr['type'], $arr['desc']));
+        if($arr['params'] !== 0)
+        {
+          $comment->addParam(PhpDocElementFactory::getParam($arr['type'], '$' . $arr['type'], $arr['desc']));
+        }
         $comment->setReturn(PhpDocElementFactory::getReturn($arr['type'] . 'Response', ''));
       }
 
-      $source = '  return $this->__soapCall(\''.$name.'\', array($' . $arr['type'] . '));' . PHP_EOL;
-
-      $paramStr = $operation->getParamString($this->types);
+      if($arr['params'] === 0)
+      {
+        $source = '  return $this->__soapCall(\''.$name.'\', array());' . PHP_EOL;
+        $paramStr = '';
+      }
+      else
+      {
+        $source = '  return $this->__soapCall(\''.$name.'\', array($' . $arr['type'] . '));' . PHP_EOL;
+        $paramStr = $operation->getParamString($this->types);
+      }
 
       $function = new PhpFunction('public', $name, $paramStr, $source, $comment);
 

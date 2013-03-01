@@ -112,13 +112,18 @@ class Operation
    *
    * @param string $name The param to get
    * @param array An array of Type objects with valid types for typehinting
-   * @return array A array with three keys 'type' => the typehint to use 'name' => the name of the param and 'desc' => A description of the param
+   * @return array A array with four keys
+   *  'type'   => the typehint to use
+   *  'name'   => the name of the param
+   *  'desc'   => A description of the param
+   *  'params' => number of parameters the type has (for ComplexType)
    */
   public function getPhpDocParams($name, array $validTypes)
   {
     $ret = array();
 
     $ret['desc'] = '';
+    $ret['params'] = NULL;
 
     $paramType = '';
     foreach ($this->params as $value => $typeHint)
@@ -135,7 +140,7 @@ class Operation
     {
       if ($paramType == $type->getIdentifier())
       {
-        if ($type instanceof Pattern)
+        if ($type instanceof PatternType)
         {
           $ret['type'] = $type->getDatatype();
           $ret['desc'] = _('Restriction pattern: ').$type->getValue();
@@ -144,7 +149,12 @@ class Operation
         {
           $ret['type'] = $type->getPhpIdentifier();
 
-          if ($type instanceof Enum)
+          if ($type instanceof ComplexType)
+          {
+            $ret['params'] = $type->getMemberCount();
+          }
+
+          if ($type instanceof EnumType)
           {
             $ret['desc'] = _('Constant: ').$type->getDatatype() .' - '. _('Valid values: ').$type->getValidValues();
           }
