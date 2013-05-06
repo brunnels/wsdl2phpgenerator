@@ -115,7 +115,7 @@ class Service
 
     // Create the constructor
     $comment = new PhpDocComment();
-    $comment->addParam(PhpDocElementFactory::getParam('array', 'config', 'A array of config values'));
+    $comment->addParam(PhpDocElementFactory::getParam('array', 'options', 'A array of config values'));
     $comment->addParam(PhpDocElementFactory::getParam('string', 'wsdl', 'The wsdl file to use'));
 
     $source = '  foreach(self::$classmap as $key => $value)
@@ -163,24 +163,29 @@ class Service
 
       $comment = new PhpDocComment($operation->getDescription());
 
-      foreach ($operation->getParams() as $param => $hint)
+      $params = $operation->getParams();
+
+      $returns = Validator::validateType($operation->getReturns());
+
+      foreach ($params as $param => $hint)
       {
         $arr = $operation->getPhpDocParams($param, $this->types);
         if($arr['params'] !== 0)
         {
-          $comment->addParam(PhpDocElementFactory::getParam($arr['type'], '$' . $arr['type'], $arr['desc']));
+          $comment->addParam(PhpDocElementFactory::getParam($arr['type'], $param, $arr['desc']));
         }
-        $comment->setReturn(PhpDocElementFactory::getReturn($arr['type'] . 'Response', ''));
       }
 
-      if($arr['params'] === 0)
+      $comment->setReturn(PhpDocElementFactory::getReturn($returns, ''));
+
+      if(!count($params))
       {
         $source = '  return $this->__soapCall(\''.$name.'\', array());' . PHP_EOL;
         $paramStr = '';
       }
       else
       {
-        $source = '  return $this->__soapCall(\''.$name.'\', array($' . $arr['type'] . '));' . PHP_EOL;
+        $source = '  return $this->__soapCall(\''.$name.'\', array(' . implode(', ', array_keys($params)) . '));' . PHP_EOL;
         $paramStr = $operation->getParamString($this->types);
       }
 
@@ -200,9 +205,9 @@ class Service
    * @param array $params
    * @param string $description
    */
-  public function addOperation($name, $params, $description)
+  public function addOperation($name, $params, $description, $returns)
   {
-    $this->operations[] = new Operation($name, $params, $description);
+    $this->operations[] = new Operation($name, $params, $description, $returns);
   }
 
   /**

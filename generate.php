@@ -59,6 +59,7 @@ catch (Exception $e)
 // Start
 $cli = new Cli('wsdl2php', '[OPTIONS] -i wsdlfile -o directory', '1.5.2');
 $cli->addFlag('-e', _('If all classes should be guarded with if(!class_exists) statements'), true, false);
+$cli->addFlag('-a', _('If all classes should be generated with accessors (getters and setters)'), true, false);
 $cli->addFlag('-t', _('If no type constructor should be generated'), true, false);
 $cli->addFlag('-s', _('If the output should be a single file'), true, false);
 $cli->addFlag('-d', _('Skips adding dependency includes'), true, false);
@@ -84,6 +85,7 @@ $cli->addFlag('-h', _('Show this help'), true, false);
 
 $cli->addAlias('-e', '--classExists');
 $cli->addAlias('-e', '--exists');
+$cli->addAlias('-a', '--createAccessors');
 $cli->addAlias('-t', '--noTypeConstructor');
 $cli->addAlias('-d', '--skipAddDependencies');
 $cli->addAlias('-g', '--serviceClassName');
@@ -139,6 +141,7 @@ if ($oneFile && strlen($classNames) > 0)
 }
 
 $classExists = $cli->getValue('-e');
+$createAccessors = $cli->getValue('-a');
 $classFileSuffix = $cli->getValue('-f');
 $serviceClassName = $cli->getValue('-g');
 $skipAddDependencies = $cli->getValue('-d');
@@ -152,19 +155,24 @@ $suffix = $cli->getValue('-q');
 $sharedTypes = $cli->getValue('--sharedTypes');
 
 $optionsArray = array();
+
 if ($cli->getValue('--singleElementArrays'))
 {
   $optionsArray[] = 'SOAP_SINGLE_ELEMENT_ARRAYS';
 }
+
 if ($cli->getValue('--xsiArrayType'))
 {
   $optionsArray[] = 'SOAP_USE_XSI_ARRAY_TYPE';
 }
+
 if ($cli->getValue('--waitOneWayCalls'))
 {
   $optionsArray[] = 'SOAP_WAIT_ONE_WAY_CALLS';
 }
+
 $wsdlCache = '';
+
 if ($cli->getValue('--cacheNone'))
 {
   $wsdlCache = 'WSDL_CACHE_NONE';
@@ -181,7 +189,9 @@ else if ($cli->getValue('--cacheBoth'))
 {
   $wsdlCache = 'WSDL_CACHE_BOTH';
 }
+
 $gzip = '';
+
 if ($cli->getValue('--gzip'))
 {
   $gzip = 'SOAP_COMPRESSION_ACCEPT | SOAP_COMPRESSION_GZIP';

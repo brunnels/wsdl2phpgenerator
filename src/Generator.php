@@ -24,7 +24,7 @@ require_once dirname(__FILE__).'/../lib/phpSource/PhpFile.php';
  *
  * @package Wsdl2PhpGenerator
  * @author Fredrik Wallgren <fredrik.wallgren@gmail.com>
- *�@license�http://www.opensource.org/licenses/mit-license.php MIT�License
+ * @license http://www.opensource.org/licenses/mit-license.php MIT License
  */
 class Generator
 {
@@ -222,7 +222,7 @@ class Generator
 
       $this->log($this->display('Loading function ').$function);
 
-      $this->service->addOperation($function, $params, $this->documentation->getFunctionDescription($function));
+      $this->service->addOperation($function, $params, $this->documentation->getFunctionDescription($function), $returns);
     }
 
     $this->log($this->display('Done loading service ').$name);
@@ -253,6 +253,7 @@ class Generator
         continue;
       }
 
+      $arrayVars = $this->findArrayElements($className);
       $type = null;
       $numParts = count($parts);
       // ComplexType
@@ -267,6 +268,11 @@ class Generator
           list($typename, $name) = explode(" ", substr($parts[$i], 0, strlen($parts[$i])-1) );
 
           $name = $this->cleanNamespace($name);
+          if (array_key_exists($name, $arrayVars))
+          {
+            $typename .= '[]';
+          }
+
           $type->addMember($typename, $name);
         }
       }
@@ -318,6 +324,32 @@ class Generator
     }
 
     $this->log($this->display('Done loading types'));
+  }
+
+  /**
+  * Find the elements with maxOccurs="unbounded"
+  * @param $className
+  * @return array associative array where the key is the element name and the value is the element DOM node
+  * @access private
+  */
+  private function findArrayElements($className)
+  {
+    $typenode = $this->findTypenode($className);
+    $arrayVars = array();
+    if ($typenode)
+    {
+      $elements = $typenode->getElementsByTagName('element');
+      foreach ($elements as $element)
+      {
+        $name = $element->attributes->getNamedItem('name');
+        $maxOccurs = $element->attributes->getNamedItem('maxOccurs');
+        if ($maxOccurs && $maxOccurs->nodeValue === 'unbounded')
+        {
+          $arrayVars[$name->nodeValue] = $element;
+        }
+      }
+    }
+    return $arrayVars;
   }
 
   /**

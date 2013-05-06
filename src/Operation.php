@@ -33,15 +33,23 @@ class Operation
 
   /**
    *
+   * @var string A description of the operation
+   */
+  private $returns;
+
+  /**
+   *
    * @param string $name
    * @param array $paramStr The parameter string for a operation from the wsdl
    * @param string $description
+   * @param string $returns
    */
-  function __construct($name, $paramStr, $description)
+  function __construct($name, $paramStr, $description, $returns)
   {
     $this->name = $name;
     $this->params = array();
     $this->description = $description;
+    $this->returns = $returns;
 
     $this->generateParams($paramStr);
   }
@@ -62,6 +70,15 @@ class Operation
   public function getDescription()
   {
     return $this->description;
+  }
+
+  /**
+   *
+   * @return string
+   */
+  public function getReturns()
+  {
+    return $this->returns;
   }
 
   /**
@@ -91,7 +108,7 @@ class Operation
             if ($typeHint == $type->getIdentifier())
             {
               $ret .= $type->getPhpIdentifier().' ';
-              $value = '$' . $type->getPhpIdentifier();
+              //$value = '$' . $type->getPhpIdentifier();
             }
           }
         }
@@ -134,29 +151,29 @@ class Operation
       }
     }
 
-    $ret['type'] = $paramType;
+    $ret['type'] = Validator::validateType($paramType);
 
     foreach ($validTypes as $type)
     {
       if ($paramType == $type->getIdentifier())
       {
+
         if ($type instanceof PatternType)
         {
-          $ret['type'] = $type->getDatatype();
+          $ret['type'] = Validator::validateType($type->getDatatype());
           $ret['desc'] = _('Restriction pattern: ').$type->getValue();
         }
         else
         {
-          $ret['type'] = $type->getPhpIdentifier();
-
           if ($type instanceof ComplexType)
           {
+            $ret['type'] = $type->getPhpIdentifier();
             $ret['params'] = $type->getMemberCount();
           }
 
           if ($type instanceof EnumType)
           {
-            $ret['desc'] = _('Constant: ').$type->getDatatype() .' - '. _('Valid values: ').$type->getValidValues();
+            $ret['desc'] = _('Constant: ') . Validator::validateType($type->getDatatype()) . ' - '. _('Valid values: ').$type->getValidValues();
           }
         }
       }

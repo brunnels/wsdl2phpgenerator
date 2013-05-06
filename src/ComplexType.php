@@ -41,6 +41,17 @@ class ComplexType extends Type
     'mixed'
   );
 
+  /**
+   * Construct the object
+   *
+   * @param string $name The identifier for the class
+   * @param string $restriction The restriction(datatype) of the values
+   */
+  function __construct($name)
+  {
+    parent::__construct($name, null);
+  }
+  
   private function generateParameterConstructor($class)
   {
     $constructorComment = new PhpDocComment();
@@ -115,23 +126,6 @@ class ComplexType extends Type
     return $class;
   }
 
-//   private function generateArrayConstructor($class)
-//   {
-//     $constructorComment = new PhpDocComment();
-
-//     $constructorSource  = '  foreach($properties as $key => $value)'.PHP_EOL;
-//     $constructorSource .= '  {'.PHP_EOL;
-//     $constructorSource .= '    call_user_func(array($this, \'set\' . str_replace("__", "_", ucfirst(sfInflector::camelize($key)))), $value);'.PHP_EOL;
-//     $constructorSource .= '  }'.PHP_EOL;
-
-//     $constructorParameters = 'array $properties = array()';
-
-//     $constructorFunction = new PhpFunction('public', '__construct', $constructorParameters, $constructorSource, $constructorComment);
-//     $class->addFunction($constructorFunction);
-
-//     return $class;
-//   }
-
   /**
    * Implements the loading of the class object using setters and getters
    * @throws Exception if the class is already generated(not null)
@@ -163,6 +157,7 @@ class ComplexType extends Type
       try
       {
         $type = Validator::validateType($member->getType());
+        //if($type == 'CTSDeviceTypeEnum') var_export($member);
       }
       catch (ValidationException $e)
       {
@@ -183,23 +178,25 @@ class ComplexType extends Type
       $classVar = new PhpVariable('private', $varName, '', $classComment);
       $class->addVariable($classVar);
 
-      // dont add setters for response and result classes
-
-      if (!$isResponseClass)
+      if ($config->getCreateAccessors())
       {
-        $setterParameters = ((!in_array($type, $this->primitives)) ? "$type " : '') . "$$name";
-        $setterSource = "  \$this->$varName = $$name;".PHP_EOL;
-        $setterComment = new PhpDocComment();
-        $setterComment->addParam(PhpDocElementFactory::getParam($type, $name, ''));
-        $setterFunction = new PhpFunction('public', 'set' . ucfirst($methodName), $setterParameters, $setterSource, $setterComment);
-        $class->addFunction($setterFunction);
-      }
+        // dont add setters for response and result classes
+        if (!$isResponseClass)
+        {
+          $setterParameters = ((!in_array($type, $this->primitives)) ? "$type " : '') . "$$name";
+          $setterSource = "  \$this->$varName = $$name;".PHP_EOL;
+          $setterComment = new PhpDocComment();
+          $setterComment->addParam(PhpDocElementFactory::getParam($type, $name, ''));
+          $setterFunction = new PhpFunction('public', 'set' . ucfirst($methodName), $setterParameters, $setterSource, $setterComment);
+          $class->addFunction($setterFunction);
+        }
 
-      $getterSource = "  return \$this->$name;".PHP_EOL;
-      $getterComment = new PhpDocComment();
-      $getterComment->setReturn(PhpDocElementFactory::getReturn($type, ''));
-      $getterFunction = new PhpFunction('public', 'get' . ucfirst($methodName), '', $getterSource, $getterComment);
-      $class->addFunction($getterFunction);
+        $getterSource = "  return \$this->$name;".PHP_EOL;
+        $getterComment = new PhpDocComment();
+        $getterComment->setReturn(PhpDocElementFactory::getReturn($type, ''));
+        $getterFunction = new PhpFunction('public', 'get' . ucfirst($methodName), '', $getterSource, $getterComment);
+        $class->addFunction($getterFunction);
+      }
     }
 
     $this->class = $class;

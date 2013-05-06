@@ -25,7 +25,7 @@ class Config
    * @access private
    */
   private $oneFile;
-  
+
   /**
    *
    * @var bool Skips adding dependency includes if true
@@ -66,16 +66,16 @@ class Config
    * @var string The wsdl cache to use if any. Possible values WSDL_CACHE_NONE, WSDL_CACHE_DISK, WSDL_CACHE_MEMORY or WSDL_CACHE_BOTH
    */
   private $wsdlCache;
-  
+
   /**
-   * 
+   *
    * @var string The suffix for the class file name.  ie "class" outputs ClassName.class.php
    */
   private $classFileSuffix;
-  
+
   /**
    * The name of the service class
-   * 
+   *
    * @var string
    */
   private $serviceClassName;
@@ -125,6 +125,13 @@ class Config
   private $sharedTypes;
 
   /**
+   *
+   * @var bool Decides if getter and setter methods should be created for member variables
+   * @access private
+   */
+  private $createAccessors;
+
+  /**
    * Sets all variables
    *
    * @param string $inputFile
@@ -144,8 +151,9 @@ class Config
    * @param string $prefix
    * @param string $suffix
    * @param string $sharedTypes
+   * @param bool $createAccessors
    */
-  public function __construct($inputFile, $outputDir, $verbose = false, $oneFile = false, $skipAddDependencies = false, $classExists = false, $classFileSuffix = '', $serviceClassName = null, $noTypeConstructor = false, $namespaceName = '', $optionsFeatures = array(), $wsdlCache = '', $compression = '', $classNames = '', $prefix = '', $suffix = '', $sharedTypes = false)
+  public function __construct($inputFile, $outputDir, $verbose = false, $oneFile = false, $skipAddDependencies = false, $classExists = false, $classFileSuffix = '', $serviceClassName = null, $noTypeConstructor = false, $namespaceName = '', $optionsFeatures = array(), $wsdlCache = '', $compression = '', $classNames = '', $prefix = '', $suffix = '', $sharedTypes = false, $createAccessors = true)
   {
     $this->namespaceName = trim($namespaceName);
     $this->oneFile = $oneFile;
@@ -156,11 +164,19 @@ class Config
     $this->serviceClassName = $serviceClassName;
     $this->noTypeConstructor = $noTypeConstructor;
     $this->outputDir = trim($outputDir);
+
     if (is_array($inputFile))
+    {
       foreach ($inputFile as &$file)
-	$file = trim($file);
+      {
+	      $file = trim($file);
+      }
+    }
     else
+    {
       $inputFile = trim($inputFile);
+    }
+
     $this->inputFile = $inputFile;
     $this->optionFeatures = $optionsFeatures;
     $this->wsdlCache = '';
@@ -173,6 +189,7 @@ class Config
     $this->prefix = trim($prefix);
     $this->suffix = trim($suffix);
     $this->sharedTypes = trim($sharedTypes);
+    $this->createAccessors = trim($createAccessors);
   }
 
   /**
@@ -192,7 +209,7 @@ class Config
   {
     return $this->oneFile;
   }
-  
+
   /**
    * @return bool Returns if the dependency includes should be added
    * @access public
@@ -210,7 +227,7 @@ class Config
   {
     return $this->classExists;
   }
-  
+
   /**
    * @return string Returns the configured class file suffix
    * @access public
@@ -219,7 +236,7 @@ class Config
   {
     return $this->classFileSuffix;
   }
-  
+
   /**
    * @return string Returns the configured service class name
    * @access public
@@ -345,6 +362,23 @@ class Config
   public function getSharedTypes()
   {
     return $this->sharedTypes;
+  }
+
+  /**
+   *
+   * @return boolean Returns if getter and setter methods should be created for member variables
+   */
+  public function getCreateAccessors()
+  {
+    return $this->createAccessors;
+  }
+
+  /**
+   * @param boolean $createAccessors
+   */
+  public function setCreateAccessors($createAccessors)
+  {
+    $this->createAccessors = $createAccessors;
   }
 }
 

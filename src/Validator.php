@@ -211,7 +211,7 @@ class Validator
         return 'float';
         break;
 
-      case "string": case "token": case "normalizedstring": case "hexbinary":
+      case "string": case "token": case "normalizedstring": case "hexbinary": case "base64binary":
         return 'string';
         break;
 
